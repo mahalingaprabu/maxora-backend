@@ -6,8 +6,15 @@ module Api
       before_action :set_product, only: [:show, :update, :destroy]
 
       def index
-        products = Product.all
-        render json: products.as_json(only: [:id, :title, :description, :price, :stock, :image_url, :latitude, :longitude])
+        lat = params[:lat]
+        lng = params[:lng]
+        if lat.present? && lng.present?
+          products = Product.nearby(lat.to_f, lng.to_f, params[:radius_km]&.to_f || 50)
+          render json: products.map { |p| p.as_json(only: [:id,:title,:description,:price,:stock,:image_url,:latitude,:longitude]).merge(distance: p.try(:distance)&.to_f) }
+        else
+          products = Product.all
+          render json: products.as_json(only: [:id,:title,:description,:price,:stock,:image_url,:latitude,:longitude])
+        end
       end
 
       def show
