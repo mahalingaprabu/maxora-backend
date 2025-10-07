@@ -1,23 +1,25 @@
-# app/controllers/api/v1/auth_controller.rb
 class Api::V1::AuthController < ApplicationController
-  # signup and login are public, so do not call authenticate_request!
   def signup
     user = User.new(user_params)
     if user.save
       token = JsonWebToken.encode(user_id: user.id)
-      render json: { token: token, user: UserSerializer.new(user) }, status: :created
+      render json: {
+        token: token,
+        user: user.as_json(only: [:id, :name, :email, :role])
+      }, status: :created
     else
       render json: { errors: user.errors.full_messages }, status: :unprocessable_entity
     end
-  rescue ActiveRecord::RecordNotUnique => e
-    render json: { errors: ['Email already exists'] }, status: :conflict
   end
 
   def login
     user = User.find_by(email: login_params[:email])
     if user&.authenticate(login_params[:password])
       token = JsonWebToken.encode(user_id: user.id)
-      render json: { token: token, user: UserSerializer.new(user) }, status: :ok
+      render json: {
+        token: token,
+        user: user.as_json(only: [:id, :name, :email, :role])
+      }, status: :ok
     else
       render json: { error: 'Invalid email or password' }, status: :unauthorized
     end

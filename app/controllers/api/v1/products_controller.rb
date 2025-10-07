@@ -5,22 +5,32 @@ module Api
       before_action :authenticate_request!
       before_action :set_product, only: [:show, :update, :destroy]
 
+      # GET /api/v1/products
       def index
         lat = params[:lat]
         lng = params[:lng]
-        if lat.present? && lng.present?
-          products = Product.nearby(lat.to_f, lng.to_f, params[:radius_km]&.to_f || 50)
-          render json: products.map { |p| p.as_json(only: [:id,:title,:description,:price,:stock,:image_url,:latitude,:longitude]).merge(distance: p.try(:distance)&.to_f) }
+
+        if lat.present? && lng.present? && lat.to_f.nonzero? && lng.to_f.nonzero?
+          products = Product.nearby(lat.to_f, lng.to_f, params[:radius_km]&.to_f || 50).limit(100)
+          render json: products.map { |p| 
+            p.as_json(only: [:id, :title, :description, :price, :stock, :image_url, :latitude, :longitude])
+             .merge(distance: p.try(:distance)&.to_f)
+          }
         else
-          products = Product.all
-          render json: products.as_json(only: [:id,:title,:description,:price,:stock,:image_url,:latitude,:longitude])
+          products = Product.limit(100)
+          render json: products.map { |p| 
+            p.as_json(only: [:id, :title, :description, :price, :stock, :image_url, :latitude, :longitude])
+             .merge(distance: 0.0)
+          }
         end
       end
 
+      # GET /api/v1/products/:id
       def show
         render json: @product.as_json(only: [:id, :title, :description, :price, :stock, :image_url, :latitude, :longitude])
       end
 
+      # POST /api/v1/products
       def create
         return render json: { error: 'Forbidden' }, status: :forbidden unless current_user&.role == 'admin'
         product = Product.new(product_params)
@@ -31,6 +41,7 @@ module Api
         end
       end
 
+      # PATCH/PUT /api/v1/products/:id
       def update
         return render json: { error: 'Forbidden' }, status: :forbidden unless current_user&.role == 'admin'
         if @product.update(product_params)
@@ -40,6 +51,7 @@ module Api
         end
       end
 
+      # DELETE /api/v1/products/:id
       def destroy
         return render json: { error: 'Forbidden' }, status: :forbidden unless current_user&.role == 'admin'
         @product.destroy
@@ -59,3 +71,4 @@ module Api
     end
   end
 end
+

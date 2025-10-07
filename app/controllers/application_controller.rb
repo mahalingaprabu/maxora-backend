@@ -11,19 +11,15 @@ class ApplicationController < ActionController::API
   # Reads Authorization: Bearer <token>
   def authenticate_request!
     header = request.headers['Authorization']
-    header = header.split(' ').last if header.present?
-    decoded = JsonWebToken.decode(header)
-    if decoded && decoded[:user_id]
-      @current_user = User.find_by(id: decoded[:user_id])
+    token = header.split(' ').last if header.present?
+    decoded = JsonWebToken.decode(token)
+
+    if decoded && decoded['user_id']
+        @current_user = User.find_by(id: decoded['user_id'])
     end
 
     render json: { error: 'Not Authorized' }, status: :unauthorized unless @current_user
-  rescue JWT::DecodeError, JWT::ExpiredSignature
+    rescue JWT::ExpiredSignature, JWT::DecodeError
     render json: { error: 'Invalid or expired token' }, status: :unauthorized
-  end
-
-  # use current_user in controllers
-  def current_user
-    @current_user
-  end
+    end
 end

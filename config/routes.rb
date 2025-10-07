@@ -11,6 +11,7 @@ Rails.application.routes.draw do
     namespace :v1 do
       post 'signup', to: 'auth#signup'
       post 'login', to: 'auth#login'
+      get  'me',     to: 'users#me'
 
       resources :products, only: [:index, :show, :create, :update, :destroy]
     end
